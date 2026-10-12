@@ -43,7 +43,7 @@
   .bnav-item svg { width: 28px; height: 28px; }
 
   .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px; }
-  .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin: 20px 0 10px; }
+  .section-title { font-size: 15px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin: 20px 0 10px; }
 
   /* HOME - PET LIST */
   .pet-card { display: flex; align-items: center; gap: 14px; cursor: pointer; transition: transform .1s; }
@@ -52,8 +52,9 @@
   .pet-info { flex: 1; }
   .pet-name { font-size: 16px; font-weight: 700; }
   .pet-meta { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text); }
+  .empty-state p { font-size: 20px; font-weight: 700; line-height: 1.5; }
+  .empty-state .icon { font-size: 64px; margin-bottom: 16px; }
 
   /* MONTH PICKER */
   .month-picker { display: flex; align-items: center; justify-content: space-between; background: var(--card); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; box-shadow: var(--shadow); }
@@ -633,7 +634,7 @@ function renderPetList() {
   const pets = DB.pets;
   const el = document.getElementById('petList');
   if (!pets.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">🏠</div><p>가족을 추가해보세요!</p><p style="font-size:13px;margin-top:8px">우측 상단 + 버튼을 눌러주세요</p></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="icon">🏠</div><p>가족을 추가해보세요</p><p style="font-size:16px;font-weight:500;color:var(--text-muted);margin-top:10px">오른쪽 위 <b style="color:var(--text)">+</b> 버튼을 눌러주세요</p></div>`;
     return;
   }
   const _card = pet => {
@@ -1065,7 +1066,7 @@ function renderStats() {
           <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${m.total/maxT*100}%;background:var(--primary)"></div></div>
         </div>`).join('') + '</div>';
   } else {
-    html += `<div class="empty-state"><div class="icon" style="font-size:36px">📭</div><p>이번 달 구매 내역이 없어요</p></div>`;
+    html += `<div class="empty-state"><div class="icon" style="font-size:36px">📭</div><p style="font-size:17px;font-weight:600;color:var(--text-muted)">이번 달 구매 내역이 없어요</p></div>`;
   }
   document.getElementById('statsContent').innerHTML = html;
 }
