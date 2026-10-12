@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1A1A1A">
+<link rel="manifest" id="manifestLink" href="manifest.json">
+<link rel="icon" id="faviconLink" type="image/svg+xml">
+<link rel="apple-touch-icon" id="touchIconLink">
+<title>패밀리 노트</title>
+<style>
+  :root {
+    --primary: #1A1A1A;
+    --primary-light: #EDEDED;
+    --secondary: #FF6B8A;
+    --success: #3EC9A0;
+    --danger: #FF6B6B;
+    --bg: #F4F4F4;
+    --card: #FFFFFF;
+    --text: #1E1E1E;
+    --text-muted: #8A8A8A;
+    --border: #E3E3E3;
+    --shadow: 0 3px 16px rgba(0,0,0,0.08);
+    --radius: 18px;
+    --radius-sm: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .nav { background: var(--card); box-shadow: 0 1px 0 var(--border); position: sticky; top: 0; z-index: 100; }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; max-width: 480px; margin: 0 auto; }
+  .nav-title { font-size: 18px; font-weight: 700; color: var(--primary); }
+  .nav-btn { background: var(--card); color: var(--primary); border: 1.5px solid var(--primary); border-radius: 50%; width: 36px; height: 36px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .nav-btn.hidden { display: none; }
+
+  .page { display: none; max-width: 480px; margin: 0 auto; padding: 20px 16px 120px; }
+  .page.active { display: block; }
+
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); display: flex; z-index: 100; }
+  .bnav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 12px 0 16px; cursor: pointer; color: var(--text-muted); font-size: 13px; font-weight: 600; gap: 5px; transition: color .2s; }
+  .bnav-item.active { color: var(--primary); }
+  .bnav-item svg { width: 28px; height: 28px; }
+
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin: 20px 0 10px; }
+
+  /* HOME - PET LIST */
+  .pet-card { display: flex; align-items: center; gap: 14px; cursor: pointer; transition: transform .1s; }
+  .pet-card:active { transform: scale(.98); }
+  .pet-avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; overflow: hidden; }
+  .pet-info { flex: 1; }
+  .pet-name { font-size: 16px; font-weight: 700; }
+  .pet-meta { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* MONTH PICKER */
+  .month-picker { display: flex; align-items: center; justify-content: space-between; background: var(--card); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .month-label { font-size: 16px; font-weight: 700; }
+  .month-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--primary); padding: 4px 10px; border-radius: 8px; }
+  .month-btn:active { background: var(--primary-light); }
+
+  /* SUMMARY GRID */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .summary-card { background: var(--card); border-radius: var(--radius-sm); padding: 14px; box-shadow: var(--shadow); }
+  .s-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+  .s-val { font-size: 20px; font-weight: 800; margin-top: 4px; }
+  .s-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* WEIGHT */
+  .weight-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .weight-item:last-child { border-bottom: none; }
+  .weight-date { font-size: 13px; color: var(--text-muted); }
+  .weight-val { font-size: 18px; font-weight: 700; color: var(--primary); }
+  .weight-diff { font-size: 12px; margin-left: 6px; }
+  .diff-up { color: var(--secondary); }
+  .diff-down { color: var(--success); }
+  canvas { width: 100% !important; border-radius: var(--radius-sm); }
+
+  /* PURCHASE */
+  .purchase-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .purchase-item:last-child { border-bottom: none; }
+  .purchase-badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .badge-food   { background: #FFF3E0; color: #E65100; }
+  .badge-litter { background: #E3F2FD; color: #1565C0; }
+  .badge-med    { background: #FCE4EC; color: #880E4F; }
+  .badge-other  { background: #F3E5F5; color: #4A148C; }
+  .purchase-info { flex: 1; min-width: 0; }
+  .purchase-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .purchase-date { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .purchase-price { font-size: 15px; font-weight: 700; white-space: nowrap; }
+  .monthly-total { display: flex; justify-content: space-between; align-items: center; padding: 14px 0 4px; border-top: 2px solid var(--border); margin-top: 4px; }
+  .monthly-total .label { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+  .monthly-total .amount { font-size: 18px; font-weight: 800; color: var(--primary); }
+
+  /* CAT BARS */
+  .cat-bar-wrap { margin-bottom: 8px; }
+  .cat-bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .cat-bar-track { background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; }
+  .cat-bar-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
+
+  /* PET DETAIL HEADER */
+  .pet-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .pet-header-avatar { width: 66px; height: 66px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 34px; flex-shrink: 0; overflow: hidden; }
+  .pet-header-info h2 { font-size: 20px; font-weight: 700; }
+  .pet-header-info p { font-size: 14px; color: var(--text-muted); margin-top: 3px; }
+
+  /* TABS (detail) */
+  .tabs { display: flex; background: var(--primary-light); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 16px; gap: 2px; }
+  .tab { flex: 1; text-align: center; padding: 9px 4px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: all .2s; }
+  .tab.active { background: var(--card); color: var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+
+  /* VET */
+  .vet-item { padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .vet-item:last-child { border-bottom: none; }
+  .vet-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .vet-hospital { font-size: 15px; font-weight: 700; }
+  .vet-cost { font-size: 14px; font-weight: 700; color: var(--primary); }
+  .vet-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .vet-reason { font-size: 13px; color: var(--text); }
+  .vet-next { display: inline-block; margin-top: 6px; font-size: 11px; background: #FFF3E0; color: #E65100; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+
+  /* MEMO */
+  .memo-item { padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .memo-item:last-child { border-bottom: none; }
+  .memo-date { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .memo-text { font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+
+  .back-btn { background: none; border: none; font-size: 14px; color: var(--primary); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; margin-bottom: 16px; padding: 0; }
+  .del-btn { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px; border-radius: 6px; }
+  .del-btn:active { color: var(--danger); }
+
+  /* FAB */
+  .fab { position: fixed; right: 20px; bottom: 96px; width: 56px; height: 56px; background: var(--card); color: var(--primary); border: 1.5px solid var(--primary); border-radius: 50%; font-size: 26px; box-shadow: 0 4px 16px rgba(0,0,0,.15); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 99; transition: transform .1s; }
+  .fab:active { transform: scale(.93); }
+  .fab.hidden { display: none; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--card); border-radius: 24px 24px 0 0; padding: 24px 20px 40px; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .modal-close { float: right; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-muted); margin-top: -4px; }
+
+  /* FORM */
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; }
+  .form-input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; background: var(--bg); color: var(--text); outline: none; transition: border .2s; }
+  .form-input:focus { border-color: var(--primary); }
+  select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23AAAAC8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+  .emoji-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+  .kind-toggle { display: flex; background: var(--primary-light); border-radius: var(--radius-sm); padding: 3px; gap: 2px; }
+  .kind-toggle span { flex: 1; text-align: center; padding: 10px 0; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+  .kind-toggle span.selected { background: var(--card); color: var(--primary); box-shadow: var(--shadow); }
+  .emoji-opt { font-size: 28px; padding: 8px; border: 2px solid transparent; border-radius: var(--radius-sm); cursor: pointer; }
+  .emoji-opt.selected { border-color: var(--primary); background: var(--primary-light); }
+  .color-picker { display: flex; gap: 10px; }
+  .color-opt { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all .15s; }
+  .color-opt.selected { border-color: var(--text); transform: scale(1.15); }
+  .btn { width: 100%; padding: 15px; border: none; border-radius: var(--radius-sm); font-size: 16px; font-weight: 700; cursor: pointer; }
+  .btn:active { opacity: .8; }
+  .btn-primary { background: var(--card); color: var(--primary); border: 1.5px solid var(--primary); }
+
+  /* PHOTO */
+  .photo-upload-box { width: 100%; aspect-ratio: 1; max-width: 140px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed var(--border); border-radius: 50%; cursor: pointer; position: relative; overflow: hidden; background: var(--bg); transition: border .2s; }
+  .photo-upload-box:active { border-color: var(--primary); }
+  .photo-upload-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .photo-upload-box .photo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+  .photo-upload-box .photo-placeholder span { font-size: 32px; }
+  .photo-upload-box input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .pet-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .vet-photo-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .vet-photo-thumb { width: 72px; height: 72px; border-radius: 10px; object-fit: cover; cursor: pointer; }
+  .vet-photo-upload { width: 72px; height: 72px; border-radius: 10px; border: 2px dashed var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; background: var(--bg); color: var(--text-muted); font-size: 11px; gap: 2px; }
+  .vet-photo-upload input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  /* LIGHTBOX */
+  .backup-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 18px; margin: 24px 0 14px; }
+  .backup-card .bk-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .backup-card .bk-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .backup-card .bk-btns { display: flex; gap: 8px; }
+  .backup-card .bk-btns button { flex: 1; padding: 14px 0; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .bk-export { background: var(--card); color: var(--primary); border: 1.5px solid var(--primary) !important; }
+  .bk-import { background: var(--primary-light); color: var(--primary); }
+  .backup-warn { cursor: pointer; background: #FFF4E5; color: #8A5A00; border: 1px solid #FFD591; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; line-height: 1.5; margin-bottom: 14px; }
+  .backup-warn.hidden { display: none; }
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); z-index: 500; display: none; align-items: center; justify-content: center; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 95vw; max-height: 90vh; border-radius: 12px; object-fit: contain; }
+  .lightbox-close { position: absolute; top: 16px; right: 20px; color: #fff; font-size: 32px; cursor: pointer; background: none; border: none; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-title" id="navTitle">🏠 패밀리 노트</span>
+    <button class="nav-btn" id="navAddBtn" onclick="openAddPetModal()">+</button>
+  </div>
+</div>
+
+<!-- HOME: 반려동물 목록 -->
+<div class="page active" id="pageHome">
+  <div class="backup-warn hidden" id="backupWarn" onclick="showBackup()"></div>
+  <div class="section-title">우리 가족</div>
+  <div id="petList"></div>
+
+</div>
+
+<!-- BACKUP -->
+<div class="page" id="pageBackup">
+  <div class="backup-card" style="margin-top:4px">
+    <div class="bk-title">💾 백업 파일 저장</div>
+    <div class="bk-sub" id="backupStatus">아직 백업한 적이 없어요</div>
+    <div class="bk-btns"><button class="bk-export" onclick="exportBackup()">백업 파일 저장</button></div>
+    <div class="bk-sub" style="margin:12px 0 0">모든 기록을 파일 하나로 저장합니다. 구글 드라이브나 카톡 '나에게 보내기'로 보내두면 폰을 바꿔도 안전해요.</div>
+  </div>
+  <div class="backup-card">
+    <div class="bk-title">📂 백업 복원</div>
+    <div class="bk-sub">저장해 둔 백업 파일을 골라 기록을 되살립니다. 지금 기록은 백업 내용으로 바뀝니다.</div>
+    <div class="bk-btns"><button class="bk-import" onclick="document.getElementById('backupFileInput').click()">백업 파일 선택</button></div>
+    <input type="file" id="backupFileInput" accept=".json,application/json" style="display:none" onchange="importBackup(this.files[0]); this.value=''">
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div class="page" id="pageDetail">
+  <button class="back-btn" onclick="showHome()">← 목록으로</button>
+  <div class="pet-header">
+    <div class="pet-header-avatar" id="detailAvatar"></div>
+    <div class="pet-header-info">
+      <h2 id="detailName"></h2>
+      <p id="detailMeta"></p>
+    </div>
+    <button class="del-btn" onclick="deletePet()" style="margin-left:auto">🗑</button>
+  </div>
+
+  <!-- 탭 -->
+  <div class="tabs">
+    <div class="tab active" id="dtab-weight"  onclick="switchDetailTab('weight')">⚖️ 몸무게</div>
+    <div class="tab"        id="dtab-vet"     onclick="switchDetailTab('vet')">🏥 병원</div>
+    <div class="tab"        id="dtab-memo"    onclick="switchDetailTab('memo')">📝 메모</div>
+  </div>
+
+  <!-- 몸무게 -->
+  <div id="dcontent-weight">
+    <div class="month-picker">
+      <button class="month-btn" onclick="changeWeightMonth(-1)">‹</button>
+      <span class="month-label" id="weightMonthLabel"></span>
+      <button class="month-btn" onclick="changeWeightMonth(1)">›</button>
+    </div>
+    <div class="summary-grid" id="weightSummary"></div>
+    <div class="card" style="margin-bottom:14px">
+      <canvas id="weightChart" height="160"></canvas>
+      <div id="noWeightChart" style="text-align:center;padding:28px;color:var(--text-muted);display:none">이번 달 기록이 없어요</div>
+    </div>
+    <div class="card"><div id="weightList"></div></div>
+  </div>
+
+  <!-- 병원 진료 -->
+  <div id="dcontent-vet" style="display:none">
+    <div class="card"><div id="vetList"></div></div>
+  </div>
+
+  <!-- 메모 -->
+  <div id="dcontent-memo" style="display:none">
+    <div class="card"><div id="memoList"></div></div>
+  </div>
+</div>
+
+<!-- 구매내역 페이지 -->
+<div class="page" id="pagePurchase">
+  <div class="month-picker">
+    <button class="month-btn" onclick="changePurchaseMonth(-1)">‹</button>
+    <span class="month-label" id="purchaseMonthLabel"></span>
+    <button class="month-btn" onclick="changePurchaseMonth(1)">›</button>
+  </div>
+  <div class="summary-grid" id="purchaseSummary"></div>
+  <div class="card" id="catBreakdown" style="display:none"></div>
+  <div class="card">
+    <div id="purchaseList"></div>
+  </div>
+</div>
+
+<!-- 통계 페이지 -->
+<div class="page" id="pageStats">
+  <div class="month-picker">
+    <button class="month-btn" onclick="changeStatsMonth(-1)">‹</button>
+    <span class="month-label" id="statsMonthLabel"></span>
+    <button class="month-btn" onclick="changeStatsMonth(1)">›</button>
+  </div>
+  <div id="statsContent"></div>
+</div>
+
+<!-- FAB -->
+<button class="fab hidden" id="fabBtn"></button>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="bnav-item active" id="bnavHome" onclick="showHome()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    홈
+  </div>
+  <div class="bnav-item" id="bnavPurchase" onclick="showPurchase()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    구매내역
+  </div>
+  <div class="bnav-item" id="bnavStats" onclick="showStats()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    통계
+  </div>
+  <div class="bnav-item" id="bnavBackup" onclick="showBackup()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    백업
+  </div>
+</div>
+
+<!-- MODAL: 가족 추가 -->
+<div class="modal-overlay" id="modalAddPet">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalAddPet')">✕</button>
+    <div class="modal-title">가족 추가</div>
+    <div class="form-group" style="display:flex;justify-content:center">
+      <label class="photo-upload-box" id="petPhotoBox">
+        <div class="photo-placeholder"><span>📷</span>사진 추가</div>
+        <input type="file" id="petPhotoInput" accept="image/*" onchange="previewPetPhoto(this)">
+      </label>
+    </div>
+    <div class="form-group">
+      <label class="form-label">이름</label>
+      <input class="form-input" id="petName" placeholder="이름을 입력하세요">
+    </div>
+    <div class="form-group">
+      <label class="form-label">색상</label>
+      <div class="color-picker">
+        <div class="color-opt selected" data-color="#1A1A1A" style="background:#1A1A1A" onclick="selectColor(this)"></div>
+        <div class="color-opt" data-color="#7B6EF6" style="background:#7B6EF6" onclick="selectColor(this)"></div>
+        <div class="color-opt" data-color="#FF6B8A" style="background:#FF6B8A" onclick="selectColor(this)"></div>
+        <div class="color-opt" data-color="#3EC9A0" style="background:#3EC9A0" onclick="selectColor(this)"></div>
+        <div class="color-opt" data-color="#FFBA5A" style="background:#FFBA5A" onclick="selectColor(this)"></div>
+        <div class="color-opt" data-color="#64B5F6" style="background:#64B5F6" onclick="selectColor(this)"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="savePet()">저장</button>
+  </div>
+</div>
+
+<!-- MODAL: 몸무게 추가 -->
+<div class="modal-overlay" id="modalWeight">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalWeight')">✕</button>
+    <div class="modal-title">몸무게 기록</div>
+    <div class="form-group">
+      <label class="form-label">날짜</label>
+      <input class="form-input" type="date" id="weightDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">몸무게 (kg)</label>
+      <input class="form-input" type="number" id="weightVal" placeholder="예: 4.5" step="0.1" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">메모 (선택)</label>
+      <input class="form-input" id="weightMemo" placeholder="예: 병원 검진">
+    </div>
+    <button class="btn btn-primary" onclick="saveWeight()">저장</button>
+  </div>
+</div>
+
+<!-- MODAL: 병원 진료 추가 -->
+<div class="modal-overlay" id="modalVet">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalVet')">✕</button>
+    <div class="modal-title">🏥 병원 진료 기록</div>
+    <div class="form-group">
+      <label class="form-label">날짜</label>
+      <input class="form-input" type="date" id="vetDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">병원명</label>
+      <input class="form-input" id="vetHospital" placeholder="예: 행복동물병원">
+    </div>
+    <div class="form-group">
+      <label class="form-label">진료 내용</label>
+      <input class="form-input" id="vetReason" placeholder="예: 종합검진, 예방접종, 스케일링...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">진료비 (원)</label>
+      <input class="form-input" type="number" id="vetCost" placeholder="예: 50000" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">다음 예약일 (선택)</label>
+      <input class="form-input" type="date" id="vetNext">
+    </div>
+    <div class="form-group">
+      <label class="form-label">사진 첨부 (선택)</label>
+      <div class="vet-photo-strip" id="vetPhotoStrip">
+        <label class="vet-photo-upload">
+          <span style="font-size:22px">📷</span>추가
+          <input type="file" accept="image/*" multiple onchange="addVetPhotos(this)">
+        </label>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveVet()">저장</button>
+  </div>
+</div>
+
+<!-- MODAL: 메모 추가 -->
+<div class="modal-overlay" id="modalMemo">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalMemo')">✕</button>
+    <div class="modal-title">📝 메모</div>
+    <div class="form-group">
+      <label class="form-label">날짜</label>
+      <input class="form-input" type="date" id="memoDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">내용</label>
+      <textarea class="form-input" id="memoText" rows="4" placeholder="자유롭게 기록하세요" style="resize:none;line-height:1.6"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="saveMemo()">저장</button>
+  </div>
+</div>
+
+<!-- MODAL: 구매내역 추가 -->
+<div class="modal-overlay" id="modalPurchase">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalPurchase')">✕</button>
+    <div class="modal-title">구매 내역 추가</div>
+    <div class="form-group">
+      <label class="form-label">날짜</label>
+      <input class="form-input" type="date" id="purchaseDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">카테고리</label>
+      <select class="form-input" id="purchaseCategory">
+        <option value="food">🍖 사료/간식</option>
+        <option value="litter">🪨 모래/패드</option>
+        <option value="med">💊 의약품/보조제</option>
+        <option value="other">📦 기타</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">품목명</label>
+      <input class="form-input" id="purchaseName" placeholder="예: 로얄캐닌 성묘용 2kg">
+    </div>
+    <div class="form-group">
+      <label class="form-label">금액 (원)</label>
+      <input class="form-input" type="number" id="purchasePrice" placeholder="예: 35000" min="0">
+    </div>
+    <button class="btn btn-primary" onclick="savePurchase()">저장</button>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close">✕</button>
+  <img id="lightboxImg" src="">
+</div>
+
+<script>
+// ─── STORAGE ──────────────────────────────────────────────────────────
+const _mem = {};
+function _store(key, val) {
+  if (val === undefined) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return _mem[key] ?? null; }
+  } else {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+    _mem[key] = val;
+  }
+}
+const DB = {
+  get pets()        { return _store('pets') || []; },
+  set pets(v)       { _store('pets', v); },
+  getWeights(id)    { return _store('w_' + id) || []; },
+  setWeights(id,v)  { _store('w_' + id, v); },
+  getVets(id)       { return _store('v_' + id) || []; },
+  setVets(id,v)     { _store('v_' + id, v); },
+  getMemos(id)      { return _store('m_' + id) || []; },
+  setMemos(id,v)    { _store('m_' + id, v); },
+  get purchases()   { return _store('purchases') || []; },
+  set purchases(v)  { _store('purchases', v); },
+};
+
+// ─── IMAGE UTILS ─────────────────────────────────────────────────────
+function compressImage(file, maxW = 600, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = e => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        try {
+          const scale = Math.min(1, maxW / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } catch(e) { reject(e); }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+
+// ─── TOAST ───────────────────────────────────────────────────────────
+function toast(msg) {
+  let t = document.getElementById('_toast');
+  if (!t) {
+    t = document.createElement('div'); t.id = '_toast';
+    t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#333355;color:#fff;padding:10px 22px;border-radius:24px;font-size:14px;font-weight:600;z-index:999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.style.opacity = '0', 1800);
+}
+
+// ─── STATE ───────────────────────────────────────────────────────────
+let currentPetId = null;
+let weightYear  = new Date().getFullYear();
+let weightMonth = new Date().getMonth();
+let purchaseYear  = new Date().getFullYear();
+let purchaseMonth = new Date().getMonth();
+let statsYear  = new Date().getFullYear();
+let statsMonth = new Date().getMonth();
+let selColor = '#1A1A1A';
+let pendingPetPhoto = null;
+let pendingVetPhotos = [];
+
+// ─── UTILS ───────────────────────────────────────────────────────────
+const fmt    = n => Number(n).toLocaleString('ko-KR') + '원';
+const fmtKg  = n => parseFloat(n).toFixed(2) + ' kg';
+const mlabel = (y, m) => `${y}년 ${m+1}월`;
+const today  = () => new Date().toISOString().slice(0, 10);
+const uid    = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+const prefix = (y, m) => `${y}-${String(m+1).padStart(2,'0')}`;
+
+const CAT_LABELS = { food:'사료/간식', litter:'모래/패드', med:'의약품', other:'기타' };
+const CAT_COLORS = { food:'#FF9800', litter:'#2196F3', med:'#E91E63', other:'#9C27B0' };
+const CAT_CLASS  = { food:'badge-food', litter:'badge-litter', med:'badge-med', other:'badge-other' };
+
+// ─── NAV ─────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
+}
+
+function showHome() {
+  showPage('pageHome');
+  document.getElementById('bnavHome').classList.add('active');
+  document.getElementById('navTitle').textContent = '🏠 패밀리 노트';
+  document.getElementById('navAddBtn').classList.remove('hidden');
+  document.getElementById('fabBtn').classList.add('hidden');
+  currentPetId = null;
+  renderPetList();
+  renderBackupStatus();
+}
+
+function showPurchase() {
+  showPage('pagePurchase');
+  document.getElementById('bnavPurchase').classList.add('active');
+  document.getElementById('navTitle').textContent = '🛒 구매 내역';
+  document.getElementById('navAddBtn').classList.add('hidden');
+  const fab = document.getElementById('fabBtn');
+  fab.textContent = '+'; fab.classList.remove('hidden');
+  fab.onclick = openPurchaseModal;
+  renderPurchasePage();
+}
+
+function showStats() {
+  showPage('pageStats');
+  document.getElementById('bnavStats').classList.add('active');
+  document.getElementById('navTitle').textContent = '📊 월별 통계';
+  document.getElementById('navAddBtn').classList.add('hidden');
+  document.getElementById('fabBtn').classList.add('hidden');
+  renderStats();
+}
+
+function showBackup() {
+  showPage('pageBackup');
+  document.getElementById('bnavBackup').classList.add('active');
+  document.getElementById('navTitle').textContent = '💾 백업 / 복원';
+  document.getElementById('navAddBtn').classList.add('hidden');
+  document.getElementById('fabBtn').classList.add('hidden');
+  renderBackupStatus();
+}
+
+let currentDetailTab = 'weight';
+
+function showDetail(petId) {
+  currentPetId = petId;
+  showPage('pageDetail');
+  document.getElementById('navAddBtn').classList.add('hidden');
+  const pet = DB.pets.find(p => p.id === petId);
+  document.getElementById('navTitle').textContent = pet.name;
+  const av = document.getElementById('detailAvatar');
+  if (pet.photo) {
+    av.innerHTML = `<img src="${pet.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    av.style.background = 'transparent'; av.textContent = '';
+  } else {
+    av.innerHTML = ''; av.textContent = pet.emoji || pet.name.charAt(0);
+    av.style.background = pet.color + '1A'; av.style.color = 'var(--text)'; av.style.fontWeight = '700';
+  }
+  document.getElementById('detailName').textContent = pet.name;
+  document.getElementById('detailMeta').textContent = pet.species || '';
+  switchDetailTab('weight');
+}
+
+function switchDetailTab(tab) {
+  currentDetailTab = tab;
+  ['weight','vet','memo'].forEach(t => {
+    document.getElementById('dtab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('dcontent-' + t).style.display = t === tab ? '' : 'none';
+  });
+  const fab = document.getElementById('fabBtn');
+  fab.classList.remove('hidden');
+  if (tab === 'weight') { fab.textContent = '⚖️'; fab.onclick = openWeightModal; renderWeightPage(); }
+  else if (tab === 'vet')  { fab.textContent = '+'; fab.onclick = openVetModal; renderVetList(); }
+  else                     { fab.textContent = '+'; fab.onclick = openMemoModal; renderMemoList(); }
+}
+
+// ─── HOME ────────────────────────────────────────────────────────────
+function renderPetList() {
+  const pets = DB.pets;
+  const el = document.getElementById('petList');
+  if (!pets.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">🏠</div><p>가족을 추가해보세요!</p><p style="font-size:13px;margin-top:8px">우측 상단 + 버튼을 눌러주세요</p></div>`;
+    return;
+  }
+  const _card = pet => {
+    const ws = DB.getWeights(pet.id).sort((a,b) => b.date.localeCompare(a.date));
+    const last = ws[0];
+    const avatarHtml = pet.photo
+      ? `<div class="pet-avatar" style="overflow:hidden;padding:0"><img src="${pet.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
+      : `<div class="pet-avatar" style="background:${pet.color}1A;color:var(--text);font-size:22px;font-weight:700">${pet.emoji || pet.name.charAt(0)}</div>`;
+    return `<div class="card pet-card" onclick="showDetail('${pet.id}')">
+      ${avatarHtml}
+      <div class="pet-info">
+        <div class="pet-name">${pet.name}</div>
+        <div class="pet-meta">${pet.species || ''}</div>
+      </div>
+      <div style="text-align:right">
+        ${last
+          ? `<div style="font-size:15px;font-weight:700;color:var(--primary)">${fmtKg(last.weight)}</div><div style="font-size:11px;color:var(--text-muted)">${last.date}</div>`
+          : `<div style="font-size:12px;color:var(--text-muted)">기록 없음</div>`}
+      </div>
+    </div>`;
+  };
+  el.innerHTML = pets.map(_card).join('');
+}
+
+// ─── ADD PET ─────────────────────────────────────────────────────────
+function openAddPetModal() {
+  document.getElementById('petName').value = '';
+  pendingPetPhoto = null;
+  selColor = '#1A1A1A';
+  document.querySelectorAll('.color-opt').forEach(e => e.classList.toggle('selected', e.dataset.color === selColor));
+  document.querySelectorAll('.color-opt').forEach(c => c.classList.toggle('selected', c.dataset.color === selColor));
+  const box = document.getElementById('petPhotoBox');
+  box.innerHTML = '<div class="photo-placeholder"><span>📷</span>사진 추가</div><input type="file" id="petPhotoInput" accept="image/*" onchange="previewPetPhoto(this)">';
+  openModal('modalAddPet');
+}
+function selectColor(el) { document.querySelectorAll('.color-opt').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selColor = el.dataset.color; }
+async function previewPetPhoto(input) {
+  if (!input.files[0]) return;
+  try {
+    pendingPetPhoto = await compressImage(input.files[0], 600, 0.8);
+    const box = document.getElementById('petPhotoBox');
+    box.innerHTML = `<img src="${pendingPetPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><input type="file" id="petPhotoInput" accept="image/*" onchange="previewPetPhoto(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
+  } catch(e) {
+    toast('❌ 사진을 불러오지 못했어요. 다른 사진을 선택해주세요');
+  }
+}
+function savePet() {
+  const name = document.getElementById('petName').value.trim();
+  if (!name) { alert('이름을 입력해주세요'); return; }
+  const pets = DB.pets;
+  pets.push({ id: uid(), name, color: selColor, photo: pendingPetPhoto });
+  DB.pets = pets;
+  closeModal('modalAddPet');
+  renderPetList();
+  toast('✅ ' + name + ' 추가 완료!');
+}
+function deletePet() {
+  const pet = DB.pets.find(p => p.id === currentPetId);
+  if (!confirm(`${pet?.name}을(를) 삭제할까요?\n몸무게·병원·메모 기록도 함께 삭제됩니다.`)) return;
+  DB.pets = DB.pets.filter(p => p.id !== currentPetId);
+  ['w_','v_','m_'].forEach(pre => { try { localStorage.removeItem(pre + currentPetId); } catch(e) {} delete _mem[pre + currentPetId]; });
+  showHome();
+}
+
+// ─── WEIGHT PAGE ──────────────────────────────────────────────────────
+function changeWeightMonth(d) {
+  weightMonth += d;
+  if (weightMonth < 0)  { weightMonth = 11; weightYear--; }
+  if (weightMonth > 11) { weightMonth = 0;  weightYear++; }
+  renderWeightPage();
+}
+
+function renderWeightPage() {
+  document.getElementById('weightMonthLabel').textContent = mlabel(weightYear, weightMonth);
+  const all   = DB.getWeights(currentPetId).sort((a,b) => a.date.localeCompare(b.date));
+  const pfx   = prefix(weightYear, weightMonth);
+  const month = all.filter(w => w.date.startsWith(pfx));
+
+  // summary
+  const sumEl = document.getElementById('weightSummary');
+  if (month.length) {
+    const vals    = month.map(w => parseFloat(w.weight));
+    const latest  = vals[vals.length - 1];
+    const prevAll = all.filter(w => w.date < pfx);
+    const prevLast = prevAll.length ? parseFloat(prevAll[prevAll.length-1].weight) : null;
+    const diff = prevLast !== null ? latest - prevLast : null;
+    sumEl.innerHTML = `
+      <div class="summary-card"><div class="s-label">최근 몸무게</div><div class="s-val" style="color:var(--primary)">${fmtKg(latest)}</div>
+        <div class="s-sub">${diff !== null ? (diff > 0 ? '▲' : '▼') + Math.abs(diff).toFixed(2) + 'kg' : '이전 기록 없음'}</div></div>
+      <div class="summary-card"><div class="s-label">기록 수</div><div class="s-val">${month.length}회</div>
+        <div class="s-sub">최소 ${parseFloat(Math.min(...vals)).toFixed(1)} / 최대 ${parseFloat(Math.max(...vals)).toFixed(1)} kg</div></div>`;
+  } else {
+    sumEl.innerHTML = '';
+  }
+
+  // chart
+  drawWeightChart(month);
+
+  // list
+  const listEl = document.getElementById('weightList');
+  if (!month.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">이번 달 기록이 없어요<br><small style="margin-top:4px;display:block">⚖️ 버튼으로 추가하세요</small></div>';
+    return;
+  }
+  const sorted = [...month].sort((a,b) => b.date.localeCompare(a.date));
+  listEl.innerHTML = sorted.map((w, i) => {
+    const prv  = sorted[i + 1];
+    const diff = prv ? parseFloat(w.weight) - parseFloat(prv.weight) : null;
+    const diffHtml = diff !== null ? `<span class="weight-diff ${diff > 0 ? 'diff-up' : 'diff-down'}">${diff > 0 ? '▲' : '▼'}${Math.abs(diff).toFixed(2)}</span>` : '';
+    return `<div class="weight-item">
+      <div class="weight-date">${w.date}${w.memo ? ' · ' + w.memo : ''}</div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span class="weight-val">${fmtKg(w.weight)}</span>${diffHtml}
+        <button class="del-btn" onclick="deleteWeight('${w.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function drawWeightChart(data) {
+  const canvas  = document.getElementById('weightChart');
+  const noData  = document.getElementById('noWeightChart');
+  if (!data.length) { canvas.style.display = 'none'; noData.style.display = ''; return; }
+  canvas.style.display = ''; noData.style.display = 'none';
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 36, H = 160;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr); ctx.clearRect(0, 0, W, H);
+  const vals = data.map(d => parseFloat(d.weight));
+  const minV = Math.min(...vals) * 0.97, maxV = Math.max(...vals) * 1.03;
+  const pad  = { t:20, r:14, b:28, l:42 };
+  const cw   = W - pad.l - pad.r, ch = H - pad.t - pad.b;
+  const px   = i => pad.l + (i / (vals.length - 1 || 1)) * cw;
+  const py   = v => pad.t + (1 - (v - minV) / (maxV - minV || 1)) * ch;
+
+  ctx.strokeStyle = '#E8E9F5'; ctx.lineWidth = 1;
+  [0, .5, 1].forEach(f => { ctx.beginPath(); ctx.moveTo(pad.l, pad.t + f*ch); ctx.lineTo(pad.l+cw, pad.t + f*ch); ctx.stroke(); });
+
+  ctx.fillStyle = '#AAAAC8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+  [0, .5, 1].forEach(f => ctx.fillText((maxV - f*(maxV-minV)).toFixed(1), pad.l-4, pad.t + f*ch + 4));
+
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t+ch);
+  grad.addColorStop(0, 'rgba(0,0,0,0.14)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.moveTo(px(0), py(vals[0]));
+  vals.forEach((v,i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+  ctx.lineTo(px(vals.length-1), pad.t+ch); ctx.lineTo(px(0), pad.t+ch); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  ctx.beginPath(); ctx.moveTo(px(0), py(vals[0]));
+  vals.forEach((v,i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+  ctx.strokeStyle = '#1A1A1A'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+
+  ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+  data.forEach((d, i) => {
+    ctx.beginPath(); ctx.arc(px(i), py(vals[i]), 4, 0, Math.PI*2);
+    ctx.fillStyle = '#1A1A1A'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#AAAAC8';
+    if (data.length <= 10 || i % Math.ceil(data.length/8) === 0)
+      ctx.fillText(d.date.slice(8), px(i), pad.t+ch+14);
+  });
+}
+
+function openWeightModal() {
+  document.getElementById('weightDate').value = today();
+  document.getElementById('weightVal').value = '';
+  document.getElementById('weightMemo').value = '';
+  openModal('modalWeight');
+}
+function saveWeight() {
+  const date = document.getElementById('weightDate').value;
+  const val  = document.getElementById('weightVal').value;
+  if (!date || !val) { alert('날짜와 몸무게를 입력해주세요'); return; }
+  const ws = DB.getWeights(currentPetId);
+  ws.push({ id: uid(), date, weight: parseFloat(val), memo: document.getElementById('weightMemo').value.trim() });
+  DB.setWeights(currentPetId, ws);
+  closeModal('modalWeight');
+  renderWeightPage();
+  toast('⚖️ 몸무게 저장 완료!');
+}
+function deleteWeight(id) {
+  if (!confirm('삭제할까요?')) return;
+  DB.setWeights(currentPetId, DB.getWeights(currentPetId).filter(w => w.id !== id));
+  renderWeightPage();
+}
+
+// ─── VET ─────────────────────────────────────────────────────────────
+function openVetModal() {
+  document.getElementById('vetDate').value = today();
+  document.getElementById('vetHospital').value = '';
+  document.getElementById('vetReason').value = '';
+  document.getElementById('vetCost').value = '';
+  document.getElementById('vetNext').value = '';
+  pendingVetPhotos = [];
+  document.getElementById('vetPhotoStrip').innerHTML = `
+    <label class="vet-photo-upload">
+      <span style="font-size:22px">📷</span>추가
+      <input type="file" accept="image/*" multiple onchange="addVetPhotos(this)">
+    </label>`;
+  openModal('modalVet');
+}
+async function addVetPhotos(input) {
+  for (const file of input.files) {
+    const b64 = await compressImage(file, 800, 0.8);
+    pendingVetPhotos.push(b64);
+  }
+  renderVetPhotoStrip();
+}
+function renderVetPhotoStrip() {
+  const strip = document.getElementById('vetPhotoStrip');
+  strip.innerHTML = pendingVetPhotos.map((p, i) =>
+    `<img src="${p}" class="vet-photo-thumb" onclick="openLightbox('${p}')" title="클릭하면 크게 보기">
+     <button onclick="pendingVetPhotos.splice(${i},1);renderVetPhotoStrip()" style="position:relative;margin-left:-20px;margin-top:-8px;align-self:flex-start;background:var(--danger);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;z-index:1">✕</button>`
+  ).join('') + `
+    <label class="vet-photo-upload">
+      <span style="font-size:22px">📷</span>추가
+      <input type="file" accept="image/*" multiple onchange="addVetPhotos(this)">
+    </label>`;
+}
+function saveVet() {
+  const date     = document.getElementById('vetDate').value;
+  const hospital = document.getElementById('vetHospital').value.trim();
+  const reason   = document.getElementById('vetReason').value.trim();
+  if (!date || !hospital) { alert('날짜와 병원명을 입력해주세요'); return; }
+  const cost = parseInt(document.getElementById('vetCost').value) || 0;
+  const next = document.getElementById('vetNext').value;
+  const vs = DB.getVets(currentPetId);
+  vs.push({ id: uid(), date, hospital, reason, cost, next, photos: [...pendingVetPhotos] });
+  DB.setVets(currentPetId, vs);
+  closeModal('modalVet');
+  renderVetList();
+  toast('🏥 진료 기록 저장 완료!');
+}
+function deleteVet(id) {
+  if (!confirm('삭제할까요?')) return;
+  DB.setVets(currentPetId, DB.getVets(currentPetId).filter(v => v.id !== id));
+  renderVetList();
+}
+function renderVetList() {
+  const list = DB.getVets(currentPetId).sort((a,b) => b.date.localeCompare(a.date));
+  const el = document.getElementById('vetList');
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">진료 기록이 없어요<br><small style="display:block;margin-top:4px">+ 버튼으로 추가하세요</small></div>';
+    return;
+  }
+  el.innerHTML = list.map(v => `
+    <div class="vet-item">
+      <div class="vet-top">
+        <span class="vet-hospital">🏥 ${v.hospital}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${v.cost ? `<span class="vet-cost">${fmt(v.cost)}</span>` : ''}
+          <button class="del-btn" onclick="deleteVet('${v.id}')">✕</button>
+        </div>
+      </div>
+      <div class="vet-meta">${v.date}</div>
+      ${v.reason ? `<div class="vet-reason">${v.reason}</div>` : ''}
+      ${v.next ? `<span class="vet-next">📅 다음 예약: ${v.next}</span>` : ''}
+      ${v.photos && v.photos.length ? `
+        <div class="vet-photo-strip" style="margin-top:10px">
+          ${v.photos.map(p => `<img src="${p}" class="vet-photo-thumb" onclick="openLightbox('${p}')">`).join('')}
+        </div>` : ''}
+    </div>`).join('');
+}
+
+// ─── MEMO ─────────────────────────────────────────────────────────────
+function openMemoModal() {
+  document.getElementById('memoDate').value = today();
+  document.getElementById('memoText').value = '';
+  openModal('modalMemo');
+}
+function saveMemo() {
+  const date = document.getElementById('memoDate').value;
+  const text = document.getElementById('memoText').value.trim();
+  if (!date || !text) { alert('날짜와 내용을 입력해주세요'); return; }
+  const ms = DB.getMemos(currentPetId);
+  ms.push({ id: uid(), date, text });
+  DB.setMemos(currentPetId, ms);
+  closeModal('modalMemo');
+  renderMemoList();
+  toast('📝 메모 저장 완료!');
+}
+function deleteMemo(id) {
+  if (!confirm('삭제할까요?')) return;
+  DB.setMemos(currentPetId, DB.getMemos(currentPetId).filter(m => m.id !== id));
+  renderMemoList();
+}
+function renderMemoList() {
+  const list = DB.getMemos(currentPetId).sort((a,b) => b.date.localeCompare(a.date));
+  const el = document.getElementById('memoList');
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">메모가 없어요<br><small style="display:block;margin-top:4px">+ 버튼으로 추가하세요</small></div>';
+    return;
+  }
+  el.innerHTML = list.map(m => `
+    <div class="memo-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="memo-date">${m.date}</div>
+        <button class="del-btn" onclick="deleteMemo('${m.id}')">✕</button>
+      </div>
+      <div class="memo-text">${m.text}</div>
+    </div>`).join('');
+}
+
+// ─── PURCHASE PAGE (전체 공용) ────────────────────────────────────────
+function changePurchaseMonth(d) {
+  purchaseMonth += d;
+  if (purchaseMonth < 0)  { purchaseMonth = 11; purchaseYear--; }
+  if (purchaseMonth > 11) { purchaseMonth = 0;  purchaseYear++; }
+  renderPurchasePage();
+}
+
+function renderPurchasePage() {
+  document.getElementById('purchaseMonthLabel').textContent = mlabel(purchaseYear, purchaseMonth);
+  const pfx   = prefix(purchaseYear, purchaseMonth);
+  const month = DB.purchases.filter(p => p.date.startsWith(pfx)).sort((a,b) => b.date.localeCompare(a.date));
+  const total = month.reduce((s, p) => s + p.price, 0);
+  const cats  = {};
+  month.forEach(p => { cats[p.category] = (cats[p.category] || 0) + p.price; });
+
+  // summary
+  const topCat = Object.keys(cats).sort((a,b) => cats[b]-cats[a])[0];
+  document.getElementById('purchaseSummary').innerHTML = `
+    <div class="summary-card"><div class="s-label">이번 달 총액</div><div class="s-val" style="color:var(--primary);font-size:17px">${fmt(total)}</div><div class="s-sub">${month.length}건</div></div>
+    <div class="summary-card"><div class="s-label">최다 지출</div><div class="s-val" style="font-size:15px">${topCat ? CAT_LABELS[topCat] : '-'}</div><div class="s-sub">${topCat ? fmt(cats[topCat]) : '없음'}</div></div>`;
+
+  // category bars
+  const catEl = document.getElementById('catBreakdown');
+  if (total > 0) {
+    catEl.style.display = '';
+    catEl.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:12px">카테고리별</div>' +
+      Object.keys(cats).sort((a,b) => cats[b]-cats[a]).map(cat => `
+        <div class="cat-bar-wrap">
+          <div class="cat-bar-label"><span>${CAT_LABELS[cat]}</span><span>${fmt(cats[cat])} (${Math.round(cats[cat]/total*100)}%)</span></div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${cats[cat]/total*100}%;background:${CAT_COLORS[cat]}"></div></div>
+        </div>`).join('');
+  } else {
+    catEl.style.display = 'none';
+  }
+
+  // list
+  const listEl = document.getElementById('purchaseList');
+  if (!month.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">이번 달 구매 내역이 없어요<br><small style="display:block;margin-top:4px">+ 버튼으로 추가하세요</small></div>';
+    return;
+  }
+  listEl.innerHTML = month.map(p => `
+    <div class="purchase-item">
+      <span class="purchase-badge ${CAT_CLASS[p.category]}">${CAT_LABELS[p.category]}</span>
+      <div class="purchase-info">
+        <div class="purchase-name">${p.name}</div>
+        <div class="purchase-date">${p.date}</div>
+      </div>
+      <span class="purchase-price">${fmt(p.price)}</span>
+      <button class="del-btn" onclick="deletePurchase('${p.id}')">✕</button>
+    </div>`).join('') +
+    `<div class="monthly-total"><span class="label">이번 달 합계</span><span class="amount">${fmt(total)}</span></div>`;
+}
+
+function openPurchaseModal() {
+  document.getElementById('purchaseDate').value = today();
+  document.getElementById('purchaseName').value = '';
+  document.getElementById('purchasePrice').value = '';
+  document.getElementById('purchaseCategory').value = 'food';
+  openModal('modalPurchase');
+}
+function savePurchase() {
+  const date  = document.getElementById('purchaseDate').value;
+  const name  = document.getElementById('purchaseName').value.trim();
+  const price = parseInt(document.getElementById('purchasePrice').value);
+  if (!date || !name || !price) { alert('날짜, 품목명, 금액을 입력해주세요'); return; }
+  const ps = DB.purchases;
+  ps.push({ id: uid(), date, category: document.getElementById('purchaseCategory').value, name, price });
+  DB.purchases = ps;
+  closeModal('modalPurchase');
+  renderPurchasePage();
+  toast('🛒 구매 내역 저장 완료!');
+}
+function deletePurchase(id) {
+  if (!confirm('삭제할까요?')) return;
+  DB.purchases = DB.purchases.filter(p => p.id !== id);
+  renderPurchasePage();
+}
+
+// ─── STATS PAGE ───────────────────────────────────────────────────────
+function changeStatsMonth(d) {
+  statsMonth += d;
+  if (statsMonth < 0)  { statsMonth = 11; statsYear--; }
+  if (statsMonth > 11) { statsMonth = 0;  statsYear++; }
+  renderStats();
+}
+
+function renderStats() {
+  document.getElementById('statsMonthLabel').textContent = mlabel(statsYear, statsMonth);
+  const pfx   = prefix(statsYear, statsMonth);
+  const month = DB.purchases.filter(p => p.date.startsWith(pfx));
+  const total = month.reduce((s, p) => s + p.price, 0);
+  const cats  = {};
+  month.forEach(p => { cats[p.category] = (cats[p.category] || 0) + p.price; });
+
+  let html = `<div class="card" style="margin-bottom:14px">
+    <div style="font-size:13px;color:var(--text-muted)">이번 달 총 지출</div>
+    <div style="font-size:28px;font-weight:800;margin-top:6px;color:var(--primary)">${fmt(total)}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${month.length}건</div>
+  </div>`;
+
+  if (total > 0) {
+    html += `<div class="card"><div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:14px">카테고리별 지출</div>` +
+      Object.keys(cats).sort((a,b) => cats[b]-cats[a]).map(cat => `
+        <div class="cat-bar-wrap">
+          <div class="cat-bar-label"><span style="font-weight:600">${CAT_LABELS[cat]}</span><span>${fmt(cats[cat])} · ${Math.round(cats[cat]/total*100)}%</span></div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${cats[cat]/total*100}%;background:${CAT_COLORS[cat]}"></div></div>
+        </div>`).join('') + '</div>';
+
+    // 최근 3개월 추이
+    const months = [-2,-1,0].map(d => {
+      let y = statsYear, m = statsMonth + d;
+      while (m < 0)  { m += 12; y--; }
+      while (m > 11) { m -= 12; y++; }
+      const t = DB.purchases.filter(p => p.date.startsWith(prefix(y,m))).reduce((s,p)=>s+p.price,0);
+      return { label: `${m+1}월`, total: t };
+    });
+    const maxT = Math.max(...months.map(m=>m.total), 1);
+    html += `<div class="card"><div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:14px">최근 3개월 추이</div>` +
+      months.map(m => `
+        <div class="cat-bar-wrap">
+          <div class="cat-bar-label"><span>${m.label}</span><span>${fmt(m.total)}</span></div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${m.total/maxT*100}%;background:var(--primary)"></div></div>
+        </div>`).join('') + '</div>';
+  } else {
+    html += `<div class="empty-state"><div class="icon" style="font-size:36px">📭</div><p>이번 달 구매 내역이 없어요</p></div>`;
+  }
+  document.getElementById('statsContent').innerHTML = html;
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m =>
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); })
+);
+
+// ─── ICON & MANIFEST (인라인) ─────────────────────────────────────────
+(function() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="112" fill="%231A1A1A"/>
+    <path d="M256 118L96 258L136 258L136 400L376 400L376 258L416 258Z" fill="none" stroke="white" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M322 150L322 196" stroke="white" stroke-width="26" stroke-linecap="round"/>
+    <path d="M256 352C256 352 196 312 196 276C196 254 212 240 232 240C244 240 254 248 256 254C258 248 268 240 280 240C300 240 316 254 316 276C316 312 256 352 256 352Z" fill="white"/>
+  </svg>`;
+  const iconUrl = 'data:image/svg+xml;charset=utf-8,' + svg;
+  document.getElementById('faviconLink').href = iconUrl;
+  document.getElementById('touchIconLink').href = iconUrl;
+  try {
+    const m = { name:'패밀리 노트', short_name:'패밀리 노트',
+      start_url:'./', display:'standalone',
+      background_color:'#F4F4F4', theme_color:'#1A1A1A',
+      icons:[{ src: iconUrl, sizes:'any', type:'image/svg+xml', purpose:'any maskable' }]
+    };
+    const blob = new Blob([JSON.stringify(m)], { type:'application/json' });
+    if (location.protocol === 'file:' || location.protocol === 'content:') document.getElementById('manifestLink').href = URL.createObjectURL(blob);
+  } catch(e) {}
+})();
+
+
+// ─── BACKUP / RESTORE ────────────────────────────────────────────────
+const BACKUP_KEYS_PREFIX = ['w_','v_','m_'];
+const BACKUP_WARN_DAYS = 14;
+function _allDataKeys() {
+  const keys = ['pets','purchases'];
+  DB.pets.forEach(p => BACKUP_KEYS_PREFIX.forEach(pre => keys.push(pre + p.id)));
+  return keys;
+}
+function _countRecords() {
+  let n = DB.purchases.length;
+  DB.pets.forEach(p => { n += DB.getWeights(p.id).length + DB.getVets(p.id).length + DB.getMemos(p.id).length; });
+  return n;
+}
+function exportBackup() {
+  const data = {};
+  _allDataKeys().forEach(k => { const v = _store(k); if (v !== null) data[k] = v; });
+  const payload = { app: 'pet-manager', version: 1, exportedAt: new Date().toISOString(), data };
+  const json = JSON.stringify(payload);
+  const d = new Date();
+  const stamp = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  const fname = `패밀리노트_백업_${stamp}.json`;
+  const blob = new Blob([json], { type: 'application/json' });
+  const file = new File([blob], fname, { type: 'application/json' });
+  const finish = () => { _store('lastBackupAt', Date.now()); renderBackupStatus(); };
+  // 모바일: 공유 시트로 드라이브/카톡 등에 바로 보낼 수 있게
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: '패밀리 노트 백업' }).then(finish).catch(err => {
+      if (err && err.name === 'AbortError') return;
+      _downloadBlob(blob, fname); finish();
+    });
+  } else {
+    _downloadBlob(blob, fname); finish();
+  }
+}
+function _downloadBlob(blob, fname) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast('💾 백업 파일을 저장했어요');
+}
+function importBackup(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let payload;
+    try { payload = JSON.parse(reader.result); } catch(e) { alert('백업 파일을 읽을 수 없어요.'); return; }
+    if (!payload || payload.app !== 'pet-manager' || !payload.data) { alert('패밀리 노트 백업 파일이 아니에요.'); return; }
+    const data = payload.data;
+    const petCount = (data.pets || []).length;
+    const existing = _countRecords();
+    const when = payload.exportedAt ? new Date(payload.exportedAt).toLocaleString('ko-KR') : '알 수 없음';
+    const msg = `백업 시각: ${when}\n가족 구성원 ${petCount}명\n\n` +
+      (existing > 0 ? `지금 저장된 기록 ${existing}건을 지우고 백업 내용으로 바꿀까요?` : '이 백업으로 복원할까요?');
+    if (!confirm(msg)) return;
+    // 기존 데이터 제거 후 복원
+    _allDataKeys().forEach(k => { try { localStorage.removeItem(k); } catch(e) {} delete _mem[k]; });
+    Object.keys(data).forEach(k => _store(k, data[k]));
+    _store('lastBackupAt', Date.now());
+    toast('✅ 복원 완료!');
+    showHome();
+  };
+  reader.readAsText(file);
+}
+function renderBackupStatus() {
+  const el = document.getElementById('backupStatus');
+  const warn = document.getElementById('backupWarn');
+  const last = _store('lastBackupAt');
+  const n = _countRecords();
+  if (!last) {
+    el.textContent = `아직 백업한 적이 없어요 · 기록 ${n}건`;
+    warn.classList.toggle('hidden', n === 0);
+    warn.innerHTML = '⚠️ <b>아직 백업이 없어요.</b> 폰을 바꾸거나 초기화하면 기록이 모두 사라집니다. 하단 <b>백업</b> 탭에서 백업 파일을 저장해 두세요.';
+    return;
+  }
+  const days = Math.floor((Date.now() - last) / 86400000);
+  const d = new Date(last);
+  const label = days === 0 ? '오늘' : `${days}일 전`;
+  el.textContent = `마지막 백업: ${d.getMonth()+1}월 ${d.getDate()}일 (${label}) · 기록 ${n}건`;
+  if (days >= BACKUP_WARN_DAYS && n > 0) {
+    warn.classList.remove('hidden');
+    warn.innerHTML = `⚠️ 백업한 지 <b>${days}일</b> 지났어요. 폰을 바꾸면 그 뒤 기록은 사라집니다. 하단 <b>백업</b> 탭에서 다시 저장해 두세요.`;
+  } else warn.classList.add('hidden');
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
+renderPetList();
+renderBackupStatus();
+</script>
+</body>
+</html>
