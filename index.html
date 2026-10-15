@@ -185,6 +185,44 @@
   .bk-import { background: var(--primary-light); color: var(--primary); }
   .backup-warn { cursor: pointer; background: #FFF4E5; color: #8A5A00; border: 1px solid #FFD591; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 16px; line-height: 1.5; margin-bottom: 14px; }
   .backup-warn.hidden { display: none; }
+  /* HOME v2 */
+  .home-head { display: flex; align-items: flex-end; justify-content: space-between; margin: 4px 0 18px; }
+  .home-date { font-size: 15px; color: var(--text-muted); font-weight: 600; letter-spacing: .3px; }
+  .home-title { font-size: 28px; font-weight: 800; letter-spacing: -.5px; margin-top: 2px; }
+  .home-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+  .home-stat { background: var(--card); border-radius: var(--radius-sm); padding: 14px 16px; box-shadow: var(--shadow); }
+  .home-stat .k { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+  .home-stat .v { font-size: 22px; font-weight: 800; margin-top: 4px; letter-spacing: -.3px; }
+  .home-stat .s { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .member-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 12px; cursor: pointer; transition: transform .1s; }
+  .member-card:active { transform: scale(.985); }
+  .member-top { display: flex; align-items: center; gap: 14px; }
+  .member-avatar { width: 62px; height: 62px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; flex-shrink: 0; overflow: hidden; background: var(--primary-light); color: var(--text); }
+  .member-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .member-name { font-size: 21px; font-weight: 800; letter-spacing: -.3px; }
+  .member-sub { font-size: 14px; color: var(--text-muted); margin-top: 3px; }
+  .member-weight { text-align: right; }
+  .member-weight .w { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
+  .member-weight .w small { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-left: 2px; }
+  .member-weight .d { font-size: 13px; font-weight: 700; margin-top: 2px; }
+  .member-weight .d.up { color: #D9480F; } .member-weight .d.down { color: #1971C2; } .member-weight .d.flat { color: var(--text-muted); }
+  .member-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .member-tags:empty { display: none; }
+  .tag { font-size: 13px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: var(--primary-light); color: var(--text); }
+  .tag.alert { background: #FFF1E6; color: #B4480E; }
+  .add-card { border: 2px dashed var(--border); border-radius: var(--radius); padding: 18px; text-align: center; color: var(--text-muted); font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+  .add-card:active { background: var(--card); }
+  .upcoming { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 6px 18px; margin-bottom: 14px; }
+  .upcoming-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .upcoming-row:last-child { border-bottom: none; }
+  .upcoming-date { font-size: 14px; font-weight: 800; min-width: 48px; text-align: center; line-height: 1.15; }
+  .upcoming-date small { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+  .upcoming-main { flex: 1; min-width: 0; }
+  .upcoming-main .t { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .upcoming-main .m { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .upcoming-dday { font-size: 13px; font-weight: 800; padding: 4px 9px; border-radius: 999px; background: var(--card); color: var(--text); border: 1.5px solid var(--text); }
+  .upcoming-dday.soon { background: #FFF1E6; color: #B4480E; border-color: #F3B58F; }
+  .backup-warn { padding: 10px 14px; font-size: 14px; margin-bottom: 16px; }
   .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); z-index: 500; display: none; align-items: center; justify-content: center; }
   .lightbox.open { display: flex; }
   .lightbox img { max-width: 95vw; max-height: 90vh; border-radius: 12px; object-fit: contain; }
@@ -202,8 +240,12 @@
 
 <!-- HOME: 반려동물 목록 -->
 <div class="page active" id="pageHome">
+  <div class="home-head">
+    <div><div class="home-date" id="homeDate"></div><div class="home-title">우리 가족</div></div>
+  </div>
   <div class="backup-warn hidden" id="backupWarn" onclick="showBackup()"></div>
-  <div class="section-title">우리 가족</div>
+  <div class="home-stats" id="homeStats"></div>
+  <div id="homeUpcoming"></div>
   <div id="petList"></div>
 
 </div>
@@ -630,33 +672,105 @@ function switchDetailTab(tab) {
 }
 
 // ─── HOME ────────────────────────────────────────────────────────────
+function _daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+function _todayStr() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function renderHomeHeader() {
+  const d = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('homeDate').textContent = `${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
+}
+function _upcomingVisits() {
+  const today = _todayStr(); const out = [];
+  DB.pets.forEach(p => DB.getVets(p.id).forEach(v => {
+    if (!v.next) return;
+    const dd = _daysBetween(today, v.next);
+    if (dd >= 0 && dd <= 60) out.push({ pet: p, v, dd });
+  }));
+  return out.sort((a,b) => a.dd - b.dd);
+}
+function renderHomeStats() {
+  const el = document.getElementById('homeStats');
+  const ym = _todayStr().slice(0,7);
+  const month = DB.purchases.filter(p => p.date && p.date.startsWith(ym));
+  const total = month.reduce((a,p) => a + (p.price||0), 0);
+  let records = 0, lastDate = '';
+  DB.pets.forEach(p => {
+    const all = [...DB.getWeights(p.id), ...DB.getVets(p.id), ...DB.getMemos(p.id)];
+    all.forEach(r => { if (r.date && r.date.startsWith(ym)) records++; if (r.date && r.date > lastDate) lastDate = r.date; });
+  });
+  const lastTxt = lastDate ? (() => { const dd = _daysBetween(lastDate, _todayStr()); return dd === 0 ? '오늘 기록함' : `${dd}일 전 마지막 기록`; })() : '아직 기록 없음';
+  el.innerHTML = `
+    <div class="home-stat" onclick="showPurchase()"><div class="k">이번 달 지출</div><div class="v">${fmt(total)}</div><div class="s">${month.length}건</div></div>
+    <div class="home-stat"><div class="k">이번 달 기록</div><div class="v">${records}건</div><div class="s">${lastTxt}</div></div>`;
+}
+function renderHomeUpcoming() {
+  const el = document.getElementById('homeUpcoming');
+  const list = _upcomingVisits().slice(0, 3);
+  if (!list.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="section-title" style="margin-top:0">다가오는 병원 일정</div><div class="upcoming">` + list.map(({pet, v, dd}) => {
+    const d = new Date(v.next);
+    return `<div class="upcoming-row" onclick="showDetail('${pet.id}'); switchDetailTab('vet')">
+      <div class="upcoming-date">${d.getDate()}<small>${d.getMonth()+1}월</small></div>
+      <div class="upcoming-main"><div class="t">${pet.name} · ${v.hospital}</div><div class="m">${v.reason || '진료'}</div></div>
+      <div class="upcoming-dday ${dd <= 3 ? 'soon' : ''}">${dd === 0 ? '오늘' : 'D-' + dd}</div>
+    </div>`;
+  }).join('') + `</div>`;
+}
 function renderPetList() {
   const pets = DB.pets;
   const el = document.getElementById('petList');
+  renderHomeHeader();
   if (!pets.length) {
+    document.getElementById('homeStats').innerHTML = '';
+    document.getElementById('homeUpcoming').innerHTML = '';
     el.innerHTML = `<div class="empty-state"><div class="icon">🏠</div><p>가족을 추가해보세요</p><p style="font-size:19px;font-weight:500;color:var(--text-muted);margin-top:10px">오른쪽 위 <b style="color:var(--text)">+</b> 버튼을 눌러주세요</p></div>`;
     return;
   }
+  renderHomeStats();
+  renderHomeUpcoming();
+  const today = _todayStr();
   const _card = pet => {
     const ws = DB.getWeights(pet.id).sort((a,b) => b.date.localeCompare(a.date));
-    const last = ws[0];
+    const last = ws[0], prev = ws[1];
+    const vets = DB.getVets(pet.id), memos = DB.getMemos(pet.id);
     const avatarHtml = pet.photo
-      ? `<div class="pet-avatar" style="overflow:hidden;padding:0"><img src="${pet.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
-      : `<div class="pet-avatar" style="background:${pet.color}1A;color:var(--text);font-size:26px;font-weight:700">${pet.emoji || pet.name.charAt(0)}</div>`;
-    return `<div class="card pet-card" onclick="showDetail('${pet.id}')">
-      ${avatarHtml}
-      <div class="pet-info">
-        <div class="pet-name">${pet.name}</div>
-        <div class="pet-meta">${pet.species || ''}</div>
+      ? `<div class="member-avatar"><img src="${pet.photo}"></div>`
+      : `<div class="member-avatar" style="background:${pet.color}14">${pet.emoji || pet.name.charAt(0)}</div>`;
+    // 마지막 기록
+    let lastDate = '';
+    [...ws, ...vets, ...memos].forEach(r => { if (r.date && r.date > lastDate) lastDate = r.date; });
+    const dd = lastDate ? _daysBetween(lastDate, today) : null;
+    const sub = dd === null ? '아직 기록이 없어요' : dd === 0 ? '오늘 기록함' : dd === 1 ? '어제 기록함' : `${dd}일 전 기록`;
+    // 몸무게 + 변화
+    let weightHtml = `<div class="member-weight"><div class="w" style="font-size:16px;color:var(--text-muted);font-weight:600">기록 없음</div></div>`;
+    if (last) {
+      let delta = '';
+      if (prev) {
+        const diff = parseFloat(last.weight) - parseFloat(prev.weight);
+        const cls = Math.abs(diff) < 0.05 ? 'flat' : diff > 0 ? 'up' : 'down';
+        const sym = cls === 'flat' ? '―' : diff > 0 ? '▲' : '▼';
+        delta = `<div class="d ${cls}">${sym} ${Math.abs(diff).toFixed(1)}kg</div>`;
+      } else delta = `<div class="d flat">첫 기록</div>`;
+      weightHtml = `<div class="member-weight"><div class="w">${parseFloat(last.weight).toFixed(1)}<small>kg</small></div>${delta}</div>`;
+    }
+    // 태그
+    const tags = [];
+    const up = vets.filter(v => v.next).map(v => ({ v, dd: _daysBetween(today, v.next) })).filter(x => x.dd >= 0 && x.dd <= 60).sort((a,b) => a.dd - b.dd)[0];
+    if (up) tags.push(`<span class="tag ${up.dd <= 3 ? 'alert' : ''}">🏥 ${up.v.next.slice(5).replace('-', '/')} ${up.v.hospital}</span>`);
+    if (vets.length) tags.push(`<span class="tag">진료 ${vets.length}회</span>`);
+    if (memos.length) tags.push(`<span class="tag">메모 ${memos.length}</span>`);
+    if (dd !== null && dd >= 14) tags.push(`<span class="tag alert">기록한 지 ${dd}일</span>`);
+    return `<div class="member-card" onclick="showDetail('${pet.id}')">
+      <div class="member-top">
+        ${avatarHtml}
+        <div style="flex:1;min-width:0"><div class="member-name">${pet.name}</div><div class="member-sub">${sub}</div></div>
+        ${weightHtml}
       </div>
-      <div style="text-align:right">
-        ${last
-          ? `<div style="font-size:18px;font-weight:700;color:var(--primary)">${fmtKg(last.weight)}</div><div style="font-size:13px;color:var(--text-muted)">${last.date}</div>`
-          : `<div style="font-size:14px;color:var(--text-muted)">기록 없음</div>`}
-      </div>
+      <div class="member-tags">${tags.join('')}</div>
     </div>`;
   };
-  el.innerHTML = pets.map(_card).join('');
+  el.innerHTML = `<div class="section-title">구성원 ${pets.length}명</div>` + pets.map(_card).join('') +
+    `<div class="add-card" onclick="openAddPetModal()">＋ 가족 추가</div>`;
 }
 
 // ─── ADD PET ─────────────────────────────────────────────────────────
